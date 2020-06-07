@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <input type="text" id="textInput">
+    <button id="addBtn">Add</button>
+
+    <ul id="todoList">
+
+    </ul>
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/7.14.5/firebase.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+    <script src="https://www.gstatic.com/firebasejs/7.14.5/firebase-analytics.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        // Your web app's Firebase configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyCs8fXf4g17KzsRGhB-xVKI1CTsKBlkT6g",
+            authDomain: "todolist-bff7c.firebaseapp.com",
+            databaseURL: "https://todolist-bff7c.firebaseio.com",
+            projectId: "todolist-bff7c",
+            storageBucket: "todolist-bff7c.appspot.com",
+            messagingSenderId: "310236968434",
+            appId: "1:310236968434:web:f26a3a781b23a14948a76b",
+            measurementId: "G-EYZ4YG2G51"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        firebase.analytics();
+    </script>
+
+    <script>
+
+
+        //console.log(rootRef);
+        //console.log(firebase);
+        var items = [];
+        var url = 'http://localhost:3000/todo';
+        var input = document.getElementById('textInput');
+        var addButton = document.getElementById('addBtn');
+        var list = document.getElementById('todoList');
+        var newID = 0;
+        const path = 'todolist-bff7c';
+        addButton.addEventListener('click', addWork);
+        function loadTree(root) {
+            if (root.right == undefined || root.left == undefined)
+                return;
+            let x = { id: root.key, work: root.value.value_ };
+            items.push(x);
+            loadTree(root.left);
+            loadTree(root.right);
+            //console.log('AAAAAAAAAAA');
+        }
+        function loadData(cb, rd) {
+            //var k = new Promise(res => { }, rej => { })
+            let count = 0;
+            //items = [];
+            var rootRef = firebase.database().ref("works");
+            //console.log('I loaded');
+            rootRef.on('value', (snap) => {
+                //console.log(snap.node_.children_.root_);
+                cb(snap.node_.children_.root_);
+                //console.log(items);
+                //console.log(count);
+                //++count;
+
+            })
+            rd(renderEachItem);
+        }
+        //loadData();
+
+        function getNewId() {
+            let n = Math.floor(Math.random() * 1000 + 1);
+
+            let x = n + '';
+            items.map(i => {
+                if (i.id == n || i.id == x) {
+                    getNewId();
+                }
+                else
+                    return n;
+            })
+            return n;
+        }
+        function addWork() {
+            let n = getNewId();
+            //let x = toString(n);
+            //console.log(n);
+            firebase.database().ref(`works/${n}`).set(input.value, function (err) {
+                if (err) { console.log(err); }
+                else {
+                    console.log('Add successfull !');
+
+                    loadData(loadTree, render);
+                }
+            });
+
+        }
+
+        function updateData(id) {
+
+            firebase.database().ref(`works/${id}`).set(input.value, function (err) {
+                if (err) { console.log(err); }
+                else {
+                    loadData(loadTree, render);
+                    console.log('Update successfull !');
+                }
+            })
+        }
+
+        function deleteData(id) {
+
+            firebase.database().ref(`works/${id}`).remove(function (err) {
+                if (err) {
+                    console.log(err);
+
+                }
+                else {
+                    console.log('Remove successfull !');
+                    loadData(loadTree, render);
+                }
+            })
+
+        }
+        function setUpdateEvent(data, arrBtn) {
+            for (let i = 0; i < arrBtn.length; i++) {
+                arrBtn[i].setAttribute('id', data[i].id);
+                arrBtn[i].addEventListener('click', function () {
+                    updateData(arrBtn[i].id);
+
+                })
+            }
+        }
+        function setDeleteEvent(data, arrBtn) {
+
+            for (let i = 0; i < arrBtn.length; i++) {
+                arrBtn[i].setAttribute('id', data[i].id);
+                arrBtn[i].addEventListener('click', function () {
+                    deleteData(arrBtn[i].id);
+
+                })
+            }
+        }
+        function renderEachItem() {
+            var newList = items.map(ele => {
+                console.log('render item');
+                return '<li>' + ele.work + '<button id ="' + ele.id + '" class = "updateBtn" >' + 'Update' + '</button>' + '<button id ="' + ele.id + '" class = "deleteBtn" >' +
+                    'Delete' +
+                    '</button>' + '</li>'
+            })
+            list.innerHTML = newList.join("");
+        }
+        function render(re) {
+            //setInterval(() => {
+
+            //items = res.data;
+            //newID = res.data.length + 1;
+
+            console.log(items);
+            re();
+            console.log('I rendered');
+
+            var arrUpdateBtn = document.getElementsByClassName("updateBtn");
+            setUpdateEvent(items, arrUpdateBtn);
+
+            var arrDeleteBtn = document.getElementsByClassName("deleteBtn");
+            setDeleteEvent(items, arrDeleteBtn);
+            // console.log(newID);
+            // console.log(res.data);
+            input.value = '';
+
+
+
+            //}, 1000);
+
+            //setDeleteEvent();
+        }
+        loadData(loadTree, render);
+    </script>
+
+</body>
+
+</html>
